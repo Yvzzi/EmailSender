@@ -79,7 +79,7 @@ class Util {
 		return $result;
 	}
 	
-	public static function unicodeEncode($str, bool $htmlMode = false){
+	public static function unicodeEncode($str, bool $htmlMode = false):string {
 		$prefix = "\\u";
 		if ($htmlMode)
 			$prefix = "&#";
@@ -93,7 +93,7 @@ class Util {
 		return $unicodeStr;
 	}
 
-    public static function unicodeDecode($unicode_str){
+    public static function unicodeDecode($unicode_str):string {
         $unicode_str = str_replace('"', '\"', $unicode_str);
         $unicode_str = str_replace("'", "\'", $unicode_str);
         $json = '{"str":"'.$unicode_str.'"}';
@@ -104,31 +104,80 @@ class Util {
         return $arr['str'];
 	}
 
-	public static function getRelative($file, $relative) {
-		$file = str_replace("\\", "/", $file); 
-		$relative = str_replace("\\", "/", $relative); 
-		return str_replace($relative, "", $file);
+    public static function getBasename($path):string {
+        return basename(self::getFixedPath($path));
+    }
+    
+    public static function getDirname($path):string {
+        return dirname(self::getFixedPath($path));
+    }
+
+    public static function getCharsetFixedPath($path):string {
+        if (strtoupper(substr(PHP_OS,0,3))==='WIN') {
+            return iconv("utf-8", "gbk", $path);
+        }
+        return $path;
+    }
+    
+    public static function getFixedPath($path, $fixLast = false):string {
+        $path = str_replace("\\", "/", $path);
+        if ($fixLast) {
+            return preg_replace('/\\/$/', "", $path);
+        }
+        return $path;
+    }
+    
+    public static function getAbsolutePath($path, $workDirectory = null):string {
+        $path = self::getFixedPath($path);
+        if (preg_match('/^(\/|[A-Za-z]:\\/)/', $path) !== 0)
+            return $path;
+        
+        $path = str_replace("/./", "/", $path);
+        $path = preg_replace('/^\\.\\//', "", $path);
+        $path = preg_replace('/[\\/]{2,}/', '/', $path);
+        
+        $parts = explode("/", $path);
+        $newParts = [];
+        $len = count($parts);
+        $i = 0;
+        
+        while ($i < $len) {
+            if ($parts[$i] == "..") {
+                array_pop($newParts);
+            } else {
+                array_push($newParts, $parts[$i]);
+            }
+            $i++;
+        }
+        if ($workDirectory == null) $workDirectory = getcwd();
+        return self::getFixedPath($workDirectory) . "/" . implode("/", $newParts);
+    }
+
+	public static function getRelativePath($subject, $comparator, $workDirectory = null):string {
+        $subject = self::getAbsolutePath($subject, $workDirectory);
+        $comparator = self::getAbsolutePath($comparator, $workDirectory);
+		return str_replace($comparator, "", $subject);
 	}
 
-    public static function getProtocol() {
+    public static function getProtocol():string {
         return (!empty($_SERVER["HTTPS"] ?? "") && $_SERVER["HTTPS"] != "off") ? "https" : "http";
     }
     
-	public static function getDomain() {
+	public static function getDomain():string {
 		return $_SERVER["HTTP_HOST"] . ($_SERVER["SERVER_PORT"] == 80 ? '' : ':' . $_SERVER["SERVER_PORT"]);
 	}
 
-	public static function getQuery() {
+	public static function getQuery():array {
 		$ret = [];
 		parse_str($_SERVER["QUERY_STRING"], $ret);
 		return $ret;
 	}
 
-	public static function buildQuery($arr) {
+	public static function buildQuery($arr):string {
 		return http_build_query($arr);
 	}
 
-	public static function destory(&$var) {
+	public static function destory(&$var):void {
 		if (is_array($var)) {
 			foreach ($var as $k => $v) {
 				unset($var[$k]);
