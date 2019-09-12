@@ -6,8 +6,13 @@ require_once __DIR__ . "/../lib/AppXMLLib/Autoload.php";
 
 use mail\MailAPI;
 use template\TemplateParser;
+use com\appxml\util\Util;
 
-function sendEmail($config, $mailSetting, $output = null) {
+function sendEmail($config, $mailSetting, $output = null):void {
+    $config = Util::getAbsolutePath($config);
+    $mailSetting = Util::getAbsolutePath($mailSetting);
+    if ($output != null) $output = Util::getAbsolutePath($output);
+    
     $config = json_decode(file_get_contents($config), true);
     if ($config == null)
         throw new \ErrorException("Invalid config");
@@ -26,15 +31,15 @@ function sendEmail($config, $mailSetting, $output = null) {
     
     switch ($subfix) {
         case "xlsx":
-            $data = (new TemplateParser())->loadExcel($config["data"], $active, $config["mode"]  == "single" ? TemplateParser::MODE_SINGLE : TemplateParser::MODE_MULTIPLE);
+            $data = (new TemplateParser())->loadExcel(Util::getAbsolutePath($config["data"]), $active, $config["mode"]  == "single" ? TemplateParser::MODE_SINGLE : TemplateParser::MODE_MULTIPLE);
             break;
         case "json":
         case "js":
-            $data = (new TemplateParser())->loadJson($config["data"]);
+            $data = (new TemplateParser())->loadJson(Util::getAbsolutePath($config["data"]));
             break;
         case "yaml":
         case "yml":
-            $data = (new TemplateParser())->loadYaml($config["data"]);
+            $data = (new TemplateParser())->loadYaml(Util::getAbsolutePath($config["data"]));
             break;
         default:
             throw new \ErrorException("Invalid field data in config");
