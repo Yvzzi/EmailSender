@@ -1,0 +1,14 @@
+{
+    "mode": "multiple",
+    "template": "template/task3.tmpl",
+    "primaryKey": "name",
+    "data": "data/task3.xlsx@Sheet1",
+    "interval": [25, 30],
+    "subject": "hi",
+    "to": [
+        "{{$name}}@xxx.com"
+    ],
+    "attachment": [
+        "{{$name}}.jpg"
+    ]
+}

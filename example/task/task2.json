@@ -1,0 +1,12 @@
+{
+    "mode": "multiple",
+    "template": "template/task2.tmpl",
+    "data": "data/task2.xlsx",
+    "primaryKey": "name",
+    "interval": [25, 30],
+    "subject": "hi",
+    "to": [
+        "{{$id}}@mail.sustech.edu.cn"
+    ],
+    "attachment": []
+}

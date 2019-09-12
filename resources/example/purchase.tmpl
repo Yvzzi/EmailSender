@@ -1,0 +1,42 @@
+<table class="purchase" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td>
+            <h3>{{$invoice_id}}</h3>
+        </td>
+        <td>
+            <h3 class="align-right">{{$date}}</h3>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <table class="purchase_content" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <th class="purchase_heading" align="left">
+                        <p class="f-fallback">Description</p>
+                    </th>
+                    <th class="purchase_heading" align="right">
+                        <p class="f-fallback">Amount</p>
+                    </th>
+                </tr>
+                {{each $item}}
+                <tr>
+                    <td width="80%" class="purchase_item">
+                        <span class="f-fallback">{{$value["description"]}}</span>
+                    </td>
+                    <td class="align-right" width="20%" class="purchase_item">
+                        <span class="f-fallback">{{$value["amount"]}}</span>
+                    </td>
+                </tr>
+                {{end}}
+                <tr>
+                    <td width="80%" class="purchase_footer" valign="middle">
+                        <p class="f-fallback purchase_total purchase_total--label">Total</p>
+                    </td>
+                    <td width="20%" class="purchase_footer" valign="middle">
+                        <p class="f-fallback purchase_total">{{$total}}</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>

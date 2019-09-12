@@ -1,0 +1,10 @@
+{
+    "host": "smtp.qq.com",
+    "SMTPAuth": true,
+    "SMTPSecure": "",
+    "username": "***@qq.com",
+    "password": "***",
+    "port": 25,
+    "fromName": "AIT Mail",
+    "fromEmail": "***@qq.com"
+}
