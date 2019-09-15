@@ -1,0 +1,6 @@
+.*\.git.*
+^build
+^docs
+^example
+^README.md
+^lib\/Packager

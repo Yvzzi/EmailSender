@@ -5,7 +5,6 @@ use com\appxml\exception\UnexpectedException;
 use com\appxml\exception\FileNotExistException;
 use com\appxml\util\Util;
 
-/** TODO. Add cache for file */
 class FileIO {
 	public const OVERWRITE = "w+";
 	public const READ = "r+";
@@ -36,9 +35,9 @@ class FileIO {
 	}
 	
 	/**
-	* Get file Lock for multiply users
-	* #Bug Cannot fwrite("0", 0, true)
-	*/
+     * Get file Lock for multiply users
+     * #Bug Cannot fwrite("0", 0, true)
+     */
 	public function writeString($data, $offset, $clear):void {
 		if ($clear) {
 			$this->clear();
@@ -57,9 +56,10 @@ class FileIO {
 			flock($this->file, LOCK_UN);
 		}
 	}
+    
 	/**
-	* Get file Lock for multiply users
-	*/
+	 * Get file Lock for multiply users
+	 */
 	public function readString():string {
 		fseek($this->file, 0);
 		$starttime = microtime();
@@ -79,20 +79,83 @@ class FileIO {
 		return $filestr;
 	}
 	
+    public static function getBasename($path):string {
+        return basename(self::getFixedPath($path));
+    }
+    
+    public static function getDirname($path):string {
+        return dirname(self::getFixedPath($path));
+    }
+
+    public static function getCharsetFixedPath($path):string {
+        if (strtoupper(substr(PHP_OS,0,3))==='WIN') {
+            return iconv("utf-8", "gbk", $path);
+        }
+        return $path;
+    }
+    
+    public static function getFixedPath($path, $fixLast = true):string {
+        $path = str_replace("\\", "/", $path);
+        if ($fixLast) {
+            return preg_replace('/\\/$/', "", $path);
+        }
+        return $path;
+    }
+    
+    public static function getAbsolutePath($path, $workDirectory = null):string {
+        if (preg_match('/^(\/|[A-Za-z]:)/', $path) === 0) {
+            if ($workDirectory == null)
+                $workDirectory = getcwd();
+            $path = $workDirectory . "/" . $path;
+        }
+        $path = self::getFixedPath($path);
+        $path = str_replace("/./", "/", $path);
+        $path = preg_replace('/\\/\\.$/', "", $path);
+        $path = preg_replace('/^\\.\\//', "", $path);
+        $path = preg_replace('/[\\/]{2,}/', '/', $path);
+        $parts = explode("/", $path);
+        $newParts = [];
+        $len = count($parts);
+        $i = 0;
+        
+        while ($i < $len) {
+            if ($parts[$i] == "..") {
+                array_pop($newParts);
+            } else {
+                array_push($newParts, $parts[$i]);
+            }
+            $i++;
+        }
+        return implode("/", $newParts);
+    }
+
+	public static function getRelativePath(string $subject, string $comparator, $workDirectory = null) {
+        $subject = self::getAbsolutePath($subject, $workDirectory);
+        $comparator = self::getAbsolutePath($comparator, $workDirectory);
+		$ret = str_replace($comparator, "", $subject);
+        if ($ret == $subject) return null;
+        if (strpos($ret, "/") === 0)
+            $ret = substr($ret, 1);
+        return $ret;
+	}
+    
 	/**
-	* CreatePath
-	* @param string path
-	*/
-	public static function createPath($path):void {
-		if (self::isDirectory($path)) {
+	 *  Create Path if it dosen't exist
+	 *  
+	 *  @param string $path
+	 *  @param bool $dirMode = false
+	 */
+	public static function createPath(string $path, bool $dirMode = false):void {
+        $path = self::getFixedPath($path);
+		if ($dirMode) {
 			if (!is_dir($path)) {
-				mkdir($path, 0777, true);
+				mkdir($path, 0755, true);
 			}
 			return;
 		}
 		$dir = dirname($path);
 		if (!is_dir($dir)) {
-			!mkdir($dir, 0777, true);
+			mkdir($dir, 0777, true);
 		}
 		if (!is_file($path)) {
 			$file = fopen($path, "w+");
@@ -100,20 +163,37 @@ class FileIO {
 		}
 	}
 	
-	public static function delPath($path):void {
-		if (self::isDirectory($path) && is_dir($path)) {
-			$p = scandir($path);
-			foreach ($p as $val) {
-				if ($val != "." && $val != "..") {
-					if (is_dir($path.$val)) {
-						self::delPath($path.$val."/");
-					} else {
-						unlink($path.$val);
-					}
-				}
-			}
-			rmdir($path);
-		} elseif (self::isFile($path) && is_file($path)) {
+	/**
+	 *  Del Path if it exists
+	 *  
+	 *  @param string $path
+	 */
+	public static function delPath(string $path):void {
+        $path = self::getFixedPath($path);
+        if (!file_exists($path)) return;
+		if (is_dir($path)) {
+            $queue = [$path];
+            $rmQueue = [];
+            while (count($queue) > 0) {
+                $dir = array_shift($queue);
+                $p = scandir($dir);
+                foreach ($p as $val) {
+                    if ($val == "." || $val == "..")
+                        continue;
+                    $childPath = $dir . "/" . $val;
+                    if (is_dir($childPath)) {
+                        array_push($queue, $childPath);
+                    } else {
+                        unlink($childPath);
+                    }
+                }
+                array_push($rmQueue, $dir);
+            }
+            while (count($rmQueue) > 0) {
+                $dir = array_pop($rmQueue);
+                rmdir($dir);
+            }
+		} elseif (is_file($path)) {
 			unlink($path);
 		} else {
 			throw new FileNotExistException($path);
@@ -121,34 +201,71 @@ class FileIO {
 	}
 	
 	/**
-	 *  @brief MvPath
+	 *  Mv Path to new Path
 	 *  
-	 *  @param [in] path a/b or a/b/
-	 *  @param [in] newPath a/b or a/b/
+	 *  @param string $path
+	 *  @param string $newPath
+	 *  @param bool $dirMode = true
 	 */
-	public static function mvPath($path, $newPath):void {
-		//dir mode
-		if (self::isDirectory($path) && self::isDirectory($newPath) && is_dir($path)) {
-			if (!is_dir($newPath)) {
-				mkdir($newPath, 0777, true);
-			}
-			$p = scandir($path);
-			foreach ($p as $val) {
-				if ($val != "." && $val != "..") {
-					if (is_dir($path.$val."/")) {
-						self::mvPath($path.$val."/", $newPath.$val."/");
-					} else {
-						rename($path.$val, $newPath.$val);
-					}
-				}
-			}
-			rmdir($path);
-		} elseif (self::isFile($path) && self::isFile($newPath) && is_file($path)) {
-			$dir = self::getDirectory($newPath);
-			if (!is_dir($dir)) {
-				mkdir($dir, 0777, true);
-			}
-			rename($path, $newPath);
+	public static function mvPath(string $path, string $newPath, bool $dirMode = true):void {
+        $path = self::getFixedPath($path);
+        $newPath = self::getFixedPath($newPath);
+        
+		if (is_dir($path)) {
+            $prefix = "";
+            if ($dirMode) {
+                $prefix = basename($path);
+                if (!is_dir($newPath . "/" . $prefix))
+                    mkdir($newPath, 0755, true);                
+            } else {
+                if (!is_dir($newPath))
+                    mkdir($newPath, 0755, true);
+            }
+            
+            $queue = [$path];
+            $rmQueue = [];
+            while (count($queue) > 0) {
+                $dir = array_shift($queue);
+                $p = scandir($dir);
+                foreach ($p as $val) {
+                    if ($val == "." || $val == "..") continue;
+                    $childPath = $dir . "/" . $val;
+                    $relative = self::getRelativePath($childPath, $path);
+                    if (is_dir($childPath)) {
+                        if ($dirMode) {
+                            if (!file_exists($newPath . "/" . $prefix . "/" . $relative)) 
+                                mkdir($newPath . "/" . $prefix . "/" . $relative, 0755, true);
+                        } else {
+                            if (!file_exists($newPath . "/" . $relative)) 
+                                mkdir($newPath . "/" . $relative, 0755, true);
+                        }
+                        array_push($queue, $childPath);
+                    } else {
+                        if ($dirMode) {                            
+                            rename($childPath, $newPath . "/" . $prefix . "/" . $relative);
+                        } else {
+                            rename($childPath, $newPath . "/" . $relative);
+                        }
+                    }
+                }
+                array_push($rmQueue, $dir);
+            }
+            while (count($rmQueue) > 0) {
+                $dir = array_pop($rmQueue);
+                rmdir($dir);
+            }
+		} elseif (is_file($path)) {
+            if ($dirMode) {
+                if (!is_dir($newPath)) {
+                    mkdir($newPath, 0755, true);
+                }
+                rename($path, $newPath);
+            } else {                
+                $dir = basename($newPath);
+                if (!is_dir($dir))
+                    mkdir($dir, 0755, true);
+                rename($path, $newPath);
+            }
 		} else {
 			throw new FileNotExistException($path);
 		}
@@ -166,14 +283,6 @@ class FileIO {
 	
 	public function getPath():string {
 		return $this->path;
-	}
-	
-	public static function isDirectory($path) {
-		return strrpos($path,"/") == strlen($path) - 1;
-	}
-	
-	public static function isFile($path) {
-		return strrpos($path,"/") != strlen($path) - 1;
 	}
 }
 ?>

@@ -104,61 +104,6 @@ class Util {
         return $arr['str'];
 	}
 
-    public static function getBasename($path):string {
-        return basename(self::getFixedPath($path));
-    }
-    
-    public static function getDirname($path):string {
-        return dirname(self::getFixedPath($path));
-    }
-
-    public static function getCharsetFixedPath($path):string {
-        if (strtoupper(substr(PHP_OS,0,3))==='WIN') {
-            return iconv("utf-8", "gbk", $path);
-        }
-        return $path;
-    }
-    
-    public static function getFixedPath($path, $fixLast = false):string {
-        $path = str_replace("\\", "/", $path);
-        if ($fixLast) {
-            return preg_replace('/\\/$/', "", $path);
-        }
-        return $path;
-    }
-    
-    public static function getAbsolutePath($path, $workDirectory = null):string {
-        $path = self::getFixedPath($path);
-        if (preg_match('/^(\/|[A-Za-z]:\\/)/', $path) !== 0)
-            return $path;
-        
-        $path = str_replace("/./", "/", $path);
-        $path = preg_replace('/^\\.\\//', "", $path);
-        $path = preg_replace('/[\\/]{2,}/', '/', $path);
-        
-        $parts = explode("/", $path);
-        $newParts = [];
-        $len = count($parts);
-        $i = 0;
-        
-        while ($i < $len) {
-            if ($parts[$i] == "..") {
-                array_pop($newParts);
-            } else {
-                array_push($newParts, $parts[$i]);
-            }
-            $i++;
-        }
-        if ($workDirectory == null) $workDirectory = getcwd();
-        return self::getFixedPath($workDirectory) . "/" . implode("/", $newParts);
-    }
-
-	public static function getRelativePath($subject, $comparator, $workDirectory = null):string {
-        $subject = self::getAbsolutePath($subject, $workDirectory);
-        $comparator = self::getAbsolutePath($comparator, $workDirectory);
-		return str_replace($comparator, "", $subject);
-	}
-
     public static function getProtocol():string {
         return (!empty($_SERVER["HTTPS"] ?? "") && $_SERVER["HTTPS"] != "off") ? "https" : "http";
     }
