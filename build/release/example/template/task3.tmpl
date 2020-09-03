@@ -1,0 +1,12 @@
+{{: $include = "./../../resources/example"}}
+{{# $data "$include/content.tmpl"}}
+    <h1>Hi, This is a Example</h1>
+    <hr/>
+    <p>我是用来填充的,我是用来填充的,我是用来填充的,我是用来填充的,我是用来填充的,我是用来填充的,我是用来填充的.</p>
+    {{# $list "$include/attrList.tmpl"}}
+    <br/>
+    {{# $btn "$include/btn.tmpl"}}
+    <br/>
+    {{# $purchase "$include/purchase.tmpl"}}
+    {{# $sub "$include/subBody.tmpl"}}
+{{# $data "$include/contentEnd.tmpl"}}

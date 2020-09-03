@@ -1,4 +1,4 @@
 @echo off
 
-php ./../src/EmailSenderCli.php -h
+php ../src/EmailSenderCli.php -h
 pause

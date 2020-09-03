@@ -1,0 +1,14 @@
+{
+    "mode": "mutiple",
+    "template": "template/accept.tmpl",
+    "data": "data/task1.xlsx",
+    "primaryKey": "name",
+    "interval": [25, 30],
+    "subject": "hi",
+    "to": [
+        "{{$email}}@mail.sustech.edu.cn"
+    ],
+    "attachment": [
+        "data/attachment.txt"
+    ]
+}

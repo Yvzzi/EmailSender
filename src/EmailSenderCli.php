@@ -1,22 +1,24 @@
 <?php
 
-require_once __DIR__ . "/../lib/MailAPI/Autoload.php";
-require_once __DIR__ . "/../lib/SimpleTemplate/Autoload.php";
-require_once __DIR__ . "/../lib/AppXMLLib/Autoload.php";
+require_once __DIR__ . "/../autoload@module.php";
+try_require_once(module() . "/lib/autoload@lib.php");
+try_require_once(module() . "/vendor/autoload.php");
+try_require_once(inner() . "/lib/autoload@lib.php");
+try_require_once(inner() . "/vendor/autoload.php");
 
 use mail\MailAPI;
 use template\TemplateParser;
-use com\appxml\util\FileIO;
+use common\util\FileIO;
 
 function sendEmail($config, $mailSetting, $output = null):void {
     $config = FileIO::getAbsolutePath($config);
     $mailSetting = FileIO::getAbsolutePath($mailSetting);
     if ($output != null) $output = FileIO::getAbsolutePath($output);
-    
+
     $config = json_decode(file_get_contents($config), true);
     if ($config == null)
         throw new \ErrorException("Invalid config");
-    
+
     // load data
     $active = null;
     $index = strrpos($config["data"], "@");
@@ -70,13 +72,14 @@ function sendEmail($config, $mailSetting, $output = null):void {
         
         // complie body
         $body = TemplateParser::format($v, $config["template"]);
-        
+
         if (!is_null($output)) {
             // output mode
             if (!is_dir($output)) {
                 mkdir($output, 0755, true);
             }
             $id = empty($config["primaryKey"]) ? uniqid("", true) : $v[$config["primaryKey"]];
+            echo "> Send $output" . "/" . $id . ".html to $id, detail file is $output" . "/" . $id . "-info.json" . PHP_EOL;
             file_put_contents($output . "/" . $id . ".html", $body);
             
             $info = [
@@ -101,7 +104,8 @@ function sendEmail($config, $mailSetting, $output = null):void {
             // send mode
             foreach ($to as $e) {
                 if (empty(trim($e))) continue;
-                $m->addAddress($to);
+                echo "> Send mail to $e" . PHP_EOL;
+                $m->addAddress($e);
             }
             $m->setSubject($subject);
             $m->setBody($body);
